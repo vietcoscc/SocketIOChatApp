@@ -5,6 +5,7 @@ import android.content.DialogInterface;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.Log;
@@ -23,6 +24,7 @@ import org.json.JSONObject;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -34,6 +36,8 @@ public class MainActivity extends AppCompatActivity {
     EditText edtMessage;
     @BindView(R.id.btnSend)
     Button btnSend;
+    private ArrayList<ChatMessage> arrChatMessage = new ArrayList<>();
+    private ChatAdapter chatAdapter;
     private String name;
     private Socket socket = SocketIO.getInstance().getSocket();
 
@@ -45,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
+        initViews();
         showNameDialog();
         btnSend.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -54,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
                     String json = (new Gson()).toJson(chatMessage);
                     try {
                         socket.emit("sendTo", new JSONObject(json));
+                        edtMessage.setText("");
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -69,11 +75,20 @@ public class MainActivity extends AppCompatActivity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
+                        Gson gson = new Gson();
+                        ChatMessage chatMessage = gson.fromJson(args[0].toString(), ChatMessage.class);
+                        chatAdapter.addItem(chatMessage);
                         Toast.makeText(MainActivity.this, args[0].toString(), Toast.LENGTH_SHORT).show();
                     }
                 });
             }
         });
+    }
+
+    private void initViews() {
+        chatAdapter = new ChatAdapter(arrChatMessage);
+        contentRecyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
+        contentRecyclerView.setAdapter(chatAdapter);
     }
 
     private void showNameDialog() {
